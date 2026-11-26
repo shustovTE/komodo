@@ -1,4 +1,5 @@
 import ContainerPorts from "@/components/docker/container-ports";
+import { containerHealthColumn } from "@/components/docker/container-health-column";
 import DockerResourceLink from "@/components/docker/link";
 import { containerStateIntention } from "@/lib/color";
 import {
@@ -145,6 +146,7 @@ export default function Containers() {
               );
             },
           },
+          containerHealthColumn,
           {
             id: "Image",
             accessorKey: "image",

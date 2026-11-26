@@ -12,6 +12,7 @@ import DockerResourceLink from "./link";
 import { StatusBadge } from "mogh_ui";
 import { containerStateIntention } from "@/lib/color";
 import ContainerPorts from "@/components/docker/container-ports";
+import { containerHealthColumn } from "./container-health-column";
 import { SearchInput } from "mogh_ui";
 import { DividedChildren } from "mogh_ui";
 
@@ -120,6 +121,7 @@ export default function ContainersSection({
                   );
                 },
               },
+              containerHealthColumn,
               {
                 accessorKey: "image",
                 header: ({ column }) => (
