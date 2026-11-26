@@ -8637,6 +8637,8 @@ export declare enum ContainerSortBy {
     Server = "Server",
     /** Sort by container state. */
     State = "State",
+    /** Sort by the state shown in container lists, including health checks. */
+    DisplayState = "DisplayState",
     /** Sort by image. */
     Image = "Image",
     /** Sort by first network. */

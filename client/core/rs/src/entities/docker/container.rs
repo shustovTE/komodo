@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
-use strum::Display;
+use strum::{AsRefStr, Display};
 use typeshare::typeshare;
 
 use crate::entities::{I64, Usize};
@@ -70,6 +70,19 @@ pub struct ContainerListItem {
   /// can get it using InspectContainer
   #[serde(default, skip_serializing)]
   pub labels: HashMap<String, String>,
+}
+
+impl ContainerListItem {
+  /// The state shown in container lists, including the Docker health check.
+  pub fn display_state(&self) -> &str {
+    match self.status.as_deref().and_then(|s| s.rsplit_once('(')) {
+      Some((_, "healthy)")) => "healthy",
+      Some((_, "unhealthy)")) => "unhealthy",
+      Some((_, "health: starting)")) => "starting",
+      _ if self.state == ContainerStateStatusEnum::Empty => "unknown",
+      _ => self.state.as_ref(),
+    }
+  }
 }
 
 #[typeshare]
@@ -287,6 +300,8 @@ pub enum ContainerSortBy {
   Server,
   /// Sort by container state.
   State,
+  /// Sort by the state shown in container lists, including health checks.
+  DisplayState,
   /// Sort by image.
   Image,
   /// Sort by first network.
@@ -307,6 +322,7 @@ pub enum ContainerSortBy {
   Eq,
   PartialOrd,
   Ord,
+  AsRefStr,
   Display,
   Serialize,
   Deserialize,

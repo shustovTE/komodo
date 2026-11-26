@@ -165,16 +165,24 @@ export function deploymentStateIntention(
 }
 
 export function containerStateIntention(
-  state?: Types.ContainerStateStatusEnum,
+  state?:
+    | Types.ContainerStateStatusEnum
+    | "healthy"
+    | "unhealthy"
+    | "starting"
+    | "unknown",
 ): ColorIntention {
   switch (state) {
     case undefined:
       return "None";
     case Types.ContainerStateStatusEnum.Running:
+    case "healthy":
       return "Good";
     case Types.ContainerStateStatusEnum.Paused:
+    case "starting":
       return "Warning";
     case Types.ContainerStateStatusEnum.Empty:
+    case "unknown":
       return "Unknown";
     default:
       return "Critical";

@@ -134,46 +134,67 @@ impl Resolve<ReadArgs> for ListAllContainers {
       );
     }
 
-    // The containers all come from the in memory status cache,
-    // so all matching containers are collected and sorted
-    // before applying pagination.
-    let compare = |a: &ContainerListItem, b: &ContainerListItem| {
-      match self.sort_by {
-        ContainerSortBy::Name => a.name.cmp(&b.name),
-        ContainerSortBy::Server => a.server_name.cmp(&b.server_name),
-        ContainerSortBy::State => a.state.cmp(&b.state),
-        ContainerSortBy::Image => a.image.cmp(&b.image),
-        ContainerSortBy::Networks => {
-          a.networks.first().cmp(&b.networks.first())
-        }
-        ContainerSortBy::Ports => a
-          .ports
-          .first()
-          .map(|port| port.private_port)
-          .cmp(&b.ports.first().map(|port| port.private_port)),
-        ContainerSortBy::Volumes => {
-          a.volumes.first().cmp(&b.volumes.first())
-        }
-      }
-      // Fall back to name based sorting for equal sort keys.
-      // Inside `compare`, so descending sorts are fully descending,
-      // matching the List<Resource> apis.
-      .then_with(|| a.name.cmp(&b.name))
-    };
-    if self.sort_desc {
-      containers.sort_by(|a, b| compare(b, a));
-    } else {
-      containers.sort_by(|a, b| compare(a, b));
-    }
-
-    let skip = limit.saturating_mul(self.page) as usize;
-    let take = if limit == 0 {
-      usize::MAX
-    } else {
-      limit as usize
-    };
-    Ok(containers.into_iter().skip(skip).take(take).collect())
+    Ok(container_page(
+      containers,
+      self.sort_by,
+      self.sort_desc,
+      self.page,
+      limit,
+    ))
   }
+}
+
+fn container_page(
+  mut containers: Vec<ContainerListItem>,
+  sort_by: ContainerSortBy,
+  sort_desc: bool,
+  page: u64,
+  limit: u64,
+) -> Vec<ContainerListItem> {
+  // The containers all come from the in memory status cache,
+  // so all matching containers are collected and sorted
+  // before applying pagination.
+  let compare = |a: &ContainerListItem, b: &ContainerListItem| {
+    match sort_by {
+      ContainerSortBy::Name => a.name.cmp(&b.name),
+      ContainerSortBy::Server => a.server_name.cmp(&b.server_name),
+      ContainerSortBy::State => a.state.cmp(&b.state),
+      ContainerSortBy::DisplayState => {
+        a.display_state().cmp(b.display_state())
+      }
+      ContainerSortBy::Image => a.image.cmp(&b.image),
+      ContainerSortBy::Networks => {
+        a.networks.first().cmp(&b.networks.first())
+      }
+      ContainerSortBy::Ports => a
+        .ports
+        .first()
+        .map(|port| port.private_port)
+        .cmp(&b.ports.first().map(|port| port.private_port)),
+      ContainerSortBy::Volumes => {
+        a.volumes.first().cmp(&b.volumes.first())
+      }
+    }
+    // Fall back to name based sorting for equal sort keys.
+    // Inside `compare`, so descending sorts are fully descending,
+    // matching the List<Resource> apis.
+    .then_with(|| a.name.cmp(&b.name))
+    // Container names can be identical on different servers.
+    .then_with(|| a.server_id.cmp(&b.server_id))
+  };
+  if sort_desc {
+    containers.sort_by(|a, b| compare(b, a));
+  } else {
+    containers.sort_by(|a, b| compare(a, b));
+  }
+
+  let skip = limit.saturating_mul(page) as usize;
+  let take = if limit == 0 {
+    usize::MAX
+  } else {
+    limit as usize
+  };
+  containers.into_iter().skip(skip).take(take).collect()
 }
 
 impl Resolve<ReadArgs> for ListContainers {
@@ -586,5 +607,45 @@ impl Resolve<ReadArgs> for InspectVolume {
       .request(periphery::docker::InspectVolume { name: self.volume })
       .await?;
     Ok(res)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn display_state_sort_precedes_pagination() {
+    use ContainerStateStatusEnum::{Empty, Exited, Running};
+    let containers = [
+      ("db", Running, Some("Up 2 minutes (unhealthy)")),
+      ("web", Running, Some("Up 5 hours (healthy)")),
+      ("job", Exited, Some("Exited (0) 1 hour ago")),
+      ("worker", Running, None),
+      ("boot", Running, Some("Up 2 seconds (health: starting)")),
+      ("other", Empty, None),
+    ]
+    .map(|(name, state, status)| ContainerListItem {
+      name: name.into(),
+      state,
+      status: status.map(String::from),
+      ..Default::default()
+    });
+    let page = |desc, number| {
+      container_page(
+        containers.to_vec(),
+        ContainerSortBy::DisplayState,
+        desc,
+        number,
+        3,
+      )
+      .into_iter()
+      .map(|c| c.name)
+      .collect::<Vec<_>>()
+    };
+    assert_eq!(page(false, 0), ["job", "web", "worker"]);
+    assert_eq!(page(false, 1), ["boot", "db", "other"]);
+    assert_eq!(page(true, 0), ["other", "db", "boot"]);
+    assert_eq!(page(true, 1), ["worker", "web", "job"]);
   }
 }

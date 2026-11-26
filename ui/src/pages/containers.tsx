@@ -81,7 +81,10 @@ export default function Containers() {
           setSort(
             sort
               ? {
-                  sort_by: sort.id as Types.ContainerSortBy,
+                  sort_by:
+                    sort.id === Types.ContainerSortBy.State
+                      ? Types.ContainerSortBy.DisplayState
+                      : (sort.id as Types.ContainerSortBy),
                   sort_desc: sort.desc,
                 }
               : {},

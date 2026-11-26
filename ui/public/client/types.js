@@ -845,6 +845,8 @@ export var ContainerSortBy;
     ContainerSortBy["Server"] = "Server";
     /** Sort by container state. */
     ContainerSortBy["State"] = "State";
+    /** Sort by the state shown in container lists, including health checks. */
+    ContainerSortBy["DisplayState"] = "DisplayState";
     /** Sort by image. */
     ContainerSortBy["Image"] = "Image";
     /** Sort by first network. */
