@@ -9,10 +9,8 @@ import { ShowHideButton } from "mogh_ui";
 import { Group } from "@mantine/core";
 import { Types } from "komodo_client";
 import DockerResourceLink from "./link";
-import { StatusBadge } from "mogh_ui";
-import { containerStateIntention } from "@/lib/color";
 import ContainerPorts from "@/components/docker/container-ports";
-import { containerHealthColumn } from "./container-health-column";
+import { containerStateColumn } from "./container-state-column";
 import { SearchInput } from "mogh_ui";
 import { DividedChildren } from "mogh_ui";
 
@@ -106,22 +104,7 @@ export default function ContainersSection({
                   />
                 ),
               },
-              {
-                accessorKey: "state",
-                header: ({ column }) => (
-                  <SortableHeader column={column} title="State" />
-                ),
-                cell: ({ row }) => {
-                  const state = row.original?.state;
-                  return (
-                    <StatusBadge
-                      text={state}
-                      intent={containerStateIntention(state)}
-                    />
-                  );
-                },
-              },
-              containerHealthColumn,
+              containerStateColumn,
               {
                 accessorKey: "image",
                 header: ({ column }) => (

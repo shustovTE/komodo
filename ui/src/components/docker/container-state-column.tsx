@@ -1,12 +1,14 @@
+import { containerStateIntention } from "@/lib/color";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Types } from "komodo_client";
-import { type DataTableFeatures, StatusBadge } from "mogh_ui";
+import { type DataTableFeatures, SortableHeader, StatusBadge } from "mogh_ui";
 
-export const containerHealthColumn = {
-  header: "Health",
+export const containerStateColumn = {
+  accessorKey: "state",
+  header: ({ column }) => <SortableHeader column={column} title="State" />,
   cell: ({ row }) => {
     // Docker includes the health check result in the container list status.
-    const { status } = row.original;
+    const { state, status } = row.original;
     if (status?.endsWith("(healthy)")) {
       return <StatusBadge text="Healthy" intent="Good" />;
     }
@@ -16,6 +18,11 @@ export const containerHealthColumn = {
     if (status?.endsWith("(health: starting)")) {
       return <StatusBadge text="Starting" intent="Warning" />;
     }
-    return <span title="No health status reported">—</span>;
+    return (
+      <StatusBadge
+        text={state || "Unknown"}
+        intent={containerStateIntention(state)}
+      />
+    );
   },
 } satisfies ColumnDef<DataTableFeatures, Types.ContainerListItem>;

@@ -1,7 +1,6 @@
 import ContainerPorts from "@/components/docker/container-ports";
-import { containerHealthColumn } from "@/components/docker/container-health-column";
+import { containerStateColumn } from "@/components/docker/container-state-column";
 import DockerResourceLink from "@/components/docker/link";
-import { containerStateIntention } from "@/lib/color";
 import {
   useDebouncedTermSearch,
   useDockerSelectionState,
@@ -13,7 +12,6 @@ import { Types } from "komodo_client";
 import { ICONS } from "@/lib/icons";
 import { DataTable, SortableHeader } from "mogh_ui";
 import { Page } from "mogh_ui";
-import { StatusBadge } from "mogh_ui";
 import { Group, Stack } from "@mantine/core";
 import { useEffect, useMemo, useState } from "react";
 import { DividedChildren } from "mogh_ui";
@@ -130,23 +128,7 @@ export default function Containers() {
               <ResourceLink type="Server" id={row.original.server_id!} />
             ),
           },
-          {
-            id: "State",
-            accessorKey: "state",
-            header: ({ column }) => (
-              <SortableHeader column={column} title="State" />
-            ),
-            cell: ({ row }) => {
-              const state = row.original?.state;
-              return (
-                <StatusBadge
-                  text={state}
-                  intent={containerStateIntention(state)}
-                />
-              );
-            },
-          },
-          containerHealthColumn,
+          { ...containerStateColumn, id: "State" },
           {
             id: "Image",
             accessorKey: "image",
